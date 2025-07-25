@@ -4,7 +4,7 @@ from src.models.tronos_models import db, TronosUser
 
 setup_bp = Blueprint('setup', __name__)
 
-@setup_bp.route('/create-admin', methods=['POST'])
+@setup_bp.route('/create-admin', methods=['GET', 'POST'])
 def create_admin_endpoint():
     """Endpoint para criar admin em produção"""
     try:
@@ -38,7 +38,7 @@ def create_admin_endpoint():
         db.session.rollback()
         return jsonify({'error': str(e)}), 500
 
-@setup_bp.route('/create-test-user', methods=['POST'])
+@setup_bp.route('/create-test-user', methods=['GET', 'POST'])
 def create_test_user_endpoint():
     """Endpoint para criar usuário de teste em produção"""
     try:
