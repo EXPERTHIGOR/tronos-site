@@ -158,6 +158,11 @@ def check_users():
 @app.route('/', defaults={'path': ''})
 @app.route('/<path:path>')
 def serve(path):
+    # Não capturar rotas de API e setup
+    if path.startswith('api/') or path.startswith('setup/'):
+        from flask import abort
+        abort(404)
+    
     static_folder_path = app.static_folder
     if static_folder_path is None:
             return "Static folder not configured", 404
