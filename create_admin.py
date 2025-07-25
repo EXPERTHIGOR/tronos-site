@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 import os
 import sys
+from datetime import date
 
 # Adicionar o diretório src ao path
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), 'src'))
@@ -22,6 +23,8 @@ def create_admin():
             email='admin@tronos.com',
             full_name='Administrador',
             user_type='admin',
+            birth_date=date(1990, 1, 1),
+            whatsapp='11999999999',
             is_approved=True
         )
         admin.set_password('admin123')

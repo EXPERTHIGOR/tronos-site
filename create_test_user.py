@@ -3,10 +3,11 @@
 
 import sys
 import os
+from datetime import date
 sys.path.append(os.path.join(os.path.dirname(__file__), 'src'))
 
-from main import app
-from models.tronos_models import db, TronosUser
+from src.main import app
+from src.models.tronos_models import db, TronosUser
 
 def create_test_user():
     with app.app_context():
@@ -28,7 +29,7 @@ def create_test_user():
             channel_name='Canal Teste',
             function='Editor principal',
             whatsapp='11999999999',
-            birth_date='1990-01-01',
+            birth_date=date(1990, 1, 1),
             registration_code='TESTE123',
             represented_creator='Criador Teste',
             is_approved=True  # Já aprovado para teste
