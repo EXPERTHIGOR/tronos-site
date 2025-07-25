@@ -10,11 +10,13 @@ load_dotenv(os.path.join(os.path.dirname(os.path.dirname(__file__)), '.env'))
 from flask import Flask, send_from_directory
 from src.models.tronos_models import db, TronosUser, RemovalRequest, ContactMessage, SystemLog
 from src.routes.tronos_routes import tronos_bp
+from src.routes.setup_routes import setup_bp
 
 app = Flask(__name__, static_folder=os.path.join(os.path.dirname(__file__), 'static'))
 app.config['SECRET_KEY'] = 'tronos_secret_key_2024_futuristic_dark'
 
 app.register_blueprint(tronos_bp, url_prefix='/api')
+app.register_blueprint(setup_bp, url_prefix='/setup')
 
 # Database configuration for Supabase PostgreSQL
 database_url = os.environ.get('DATABASE_URL')
