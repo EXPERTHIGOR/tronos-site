@@ -1,0 +1,777 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Tronos - Painel de Remoção</title>
+    <link rel="stylesheet" href="styles.css">
+    <link rel="icon" href="favicon.ico" type="image/x-icon">
+</head>
+<body>
+    <!-- Header -->
+    <header class="header">
+        <div class="header-content">
+            <div class="logo">
+                <img src="assets/tronos_logo.png" alt="Tronos Logo">
+            </div>
+            <div class="header-info">
+                <span class="header-title">Painel de Remoção</span>
+                <div class="header-buttons">
+                    <button class="btn btn-secondary" onclick="window.location.href='/'">🏠 Home</button>
+                    <button class="btn btn-secondary" onclick="logout()">Sair</button>
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <!-- Main Content -->
+    <main class="main-content">
+        <!-- Dashboard Stats -->
+        <div class="dashboard-stats">
+            <div class="stat-card">
+                <h3>Painel de Remoção</h3>
+                <p>Gerencie suas solicitações de remoção de direitos autorais</p>
+                <div class="stat-number" id="totalRequests">0</div>
+                <span class="stat-label">Total de Solicitações</span>
+            </div>
+        </div>
+
+        <!-- Removal Form Section -->
+        <div class="content-section">
+            <div class="section-header">
+                <h2>Nova Solicitação de Remoção</h2>
+                <p>Preencha os dados dos vídeos que deseja remover (máximo 10 por solicitação)</p>
+            </div>
+
+            <form id="removalForm" class="removal-form">
+                <div id="removalItems" class="removal-items">
+                    <!-- Items will be added dynamically -->
+                </div>
+
+                <div class="form-actions">
+                    <button type="button" class="btn btn-secondary" onclick="addRemovalItem()" id="addMoreBtn">
+                        ➕ Adicionar Mais (Limite: 10)
+                    </button>
+                    <button type="submit" class="btn btn-primary btn-large">
+                        🚀 Enviar Solicitações
+                    </button>
+                </div>
+            </form>
+        </div>
+
+        <!-- History Section -->
+        <div class="content-section">
+            <div class="section-header">
+                <h2>Histórico de Solicitações</h2>
+                <p>Acompanhe o status das suas solicitações anteriores</p>
+            </div>
+
+            <div class="history-container">
+                <div id="historyList" class="history-list">
+                    <div class="loading-state">
+                        📋 Carregando histórico...
+                    </div>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <!-- Loading Overlay -->
+    <div id="loadingOverlay" class="loading-overlay">
+        <div class="loading-spinner"></div>
+    </div>
+
+    <!-- Toast Notifications -->
+    <div id="toastContainer" class="toast-container"></div>
+
+    <script>
+        // Variáveis globais
+        let removalItemCount = 0;
+        let maxItems = 10;
+        let userRequests = [];
+
+        // Função apiRequest
+        async function apiRequest(endpoint, method = 'GET', data = null) {
+            const options = {
+                method,
+                headers: {
+                    'Content-Type': 'application/json',
+                }
+            };
+            
+            if (data) {
+                options.body = JSON.stringify(data);
+            }
+            
+            try {
+                const response = await fetch(`/api${endpoint}`, options);
+                const result = await response.json();
+                
+                if (!response.ok) {
+                    throw new Error(result.error || 'Erro na requisição');
+                }
+                
+                return result;
+            } catch (error) {
+                console.error('Erro na API:', error);
+                throw error;
+            }
+        }
+
+        // Inicialização
+        document.addEventListener('DOMContentLoaded', function() {
+            initializePanel();
+        });
+
+        function initializePanel() {
+            console.log('Inicializando painel de remoção...');
+            
+            // Adicionar primeiro item automaticamente
+            addRemovalItem();
+            
+            // Carregar histórico
+            loadUserHistory();
+            
+            // Setup form submission
+            document.getElementById('removalForm').addEventListener('submit', handleFormSubmit);
+        }
+
+        function addRemovalItem() {
+            if (removalItemCount >= maxItems) {
+                showToast('Máximo de 10 itens por solicitação', 'warning');
+                return;
+            }
+
+            removalItemCount++;
+            const itemsContainer = document.getElementById('removalItems');
+            
+            const itemDiv = document.createElement('div');
+            itemDiv.className = 'removal-item';
+            itemDiv.id = `item-${removalItemCount}`;
+            
+            itemDiv.innerHTML = `
+                <div class="item-header">
+                    <h4>Item ${removalItemCount}</h4>
+                    ${removalItemCount > 1 ? `<button type="button" class="btn btn-danger btn-small" onclick="removeItem(${removalItemCount})">❌ Remover</button>` : ''}
+                </div>
+                
+                <div class="form-grid">
+                    <div class="form-group original">
+                        <label for="originalUrl-${removalItemCount}">📹 URL Original *</label>
+                        <input type="url" id="originalUrl-${removalItemCount}" name="originalUrl-${removalItemCount}" required 
+                               placeholder="https://www.youtube.com/watch?v=exemplo">
+                    </div>
+                    
+                    <div class="form-group original">
+                        <label for="originalTitle-${removalItemCount}">📝 Título Original *</label>
+                        <input type="text" id="originalTitle-${removalItemCount}" name="originalTitle-${removalItemCount}" required 
+                               placeholder="Título do conteúdo original">
+                    </div>
+                    
+                    <div class="form-group original">
+                        <label for="uploadDate-${removalItemCount}">📅 Data do Envio *</label>
+                        <input type="date" id="uploadDate-${removalItemCount}" name="uploadDate-${removalItemCount}" required>
+                    </div>
+                    
+                    <div class="form-group removal">
+                        <label for="removalUrl-${removalItemCount}">🎯 URL para Remoção *</label>
+                        <input type="url" id="removalUrl-${removalItemCount}" name="removalUrl-${removalItemCount}" required 
+                               placeholder="https://www.youtube.com/watch?v=para-remover">
+                    </div>
+                    
+                    <div class="form-group removal">
+                        <label for="userName-${removalItemCount}">👤 Nome do Usuário *</label>
+                        <input type="text" id="userName-${removalItemCount}" name="userName-${removalItemCount}" required 
+                               placeholder="Nome do usuário que postou">
+                    </div>
+                </div>
+            `;
+            
+            itemsContainer.appendChild(itemDiv);
+            
+            // Atualizar botão
+            updateAddButton();
+            
+            // Auto-save
+            setupAutoSave(removalItemCount);
+        }
+
+        function removeItem(itemId) {
+            const item = document.getElementById(`item-${itemId}`);
+            if (item) {
+                item.remove();
+                removalItemCount--;
+                updateItemNumbers();
+                updateAddButton();
+            }
+        }
+
+        function updateItemNumbers() {
+            const items = document.querySelectorAll('.removal-item');
+            items.forEach((item, index) => {
+                const newNumber = index + 1;
+                const header = item.querySelector('.item-header h4');
+                if (header) {
+                    header.textContent = `Item ${newNumber}`;
+                }
+            });
+            removalItemCount = items.length;
+        }
+
+        function updateAddButton() {
+            const addBtn = document.getElementById('addMoreBtn');
+            if (removalItemCount >= maxItems) {
+                addBtn.disabled = true;
+                addBtn.textContent = '✅ Limite Atingido (10/10)';
+            } else {
+                addBtn.disabled = false;
+                addBtn.textContent = `➕ Adicionar Mais (${removalItemCount}/${maxItems})`;
+            }
+        }
+
+        function setupAutoSave(itemId) {
+            const inputs = document.querySelectorAll(`#item-${itemId} input`);
+            inputs.forEach(input => {
+                input.addEventListener('input', () => {
+                    localStorage.setItem(`tronos_draft_${input.id}`, input.value);
+                });
+            });
+        }
+
+        async function handleFormSubmit(e) {
+            e.preventDefault();
+            
+            if (removalItemCount === 0) {
+                showToast('Adicione pelo menos um item para remoção', 'error');
+                return;
+            }
+
+            showLoading();
+            
+            try {
+                const items = [];
+                
+                for (let i = 1; i <= removalItemCount; i++) {
+                    const item = document.getElementById(`item-${i}`);
+                    if (!item) continue;
+                    
+                    const originalUrl = document.getElementById(`originalUrl-${i}`)?.value;
+                    const originalTitle = document.getElementById(`originalTitle-${i}`)?.value;
+                    const uploadDate = document.getElementById(`uploadDate-${i}`)?.value;
+                    const removalUrl = document.getElementById(`removalUrl-${i}`)?.value;
+                    const userName = document.getElementById(`userName-${i}`)?.value;
+                    
+                    if (originalUrl && originalTitle && uploadDate && removalUrl && userName) {
+                        items.push({
+                            originalUrl,
+                            originalTitle,
+                            uploadDate,
+                            removalUrl,
+                            userName
+                        });
+                    }
+                }
+                
+                if (items.length === 0) {
+                    throw new Error('Preencha todos os campos obrigatórios');
+                }
+                
+                const response = await apiRequest('/removal-request', 'POST', { items });
+                
+                showToast('Solicitação enviada com sucesso!', 'success');
+                
+                // Limpar formulário
+                document.getElementById('removalItems').innerHTML = '';
+                removalItemCount = 0;
+                addRemovalItem();
+                
+                // Recarregar histórico
+                loadUserHistory();
+                
+                // Limpar localStorage
+                clearDraftData();
+                
+            } catch (error) {
+                showToast(error.message, 'error');
+            } finally {
+                hideLoading();
+            }
+        }
+
+        async function loadUserHistory() {
+            try {
+                const response = await apiRequest('/my-requests');
+                userRequests = response;
+                renderHistory();
+                updateStats();
+            } catch (error) {
+                console.error('Erro ao carregar histórico:', error);
+                document.getElementById('historyList').innerHTML = `
+                    <div class="empty-state">
+                        <div class="empty-state-icon">📋</div>
+                        <p>Nenhuma solicitação encontrada</p>
+                    </div>
+                `;
+            }
+        }
+
+        function renderHistory() {
+            const historyContainer = document.getElementById('historyList');
+            
+            if (userRequests.length === 0) {
+                historyContainer.innerHTML = `
+                    <div class="empty-state">
+                        <div class="empty-state-icon">📋</div>
+                        <p>Nenhuma solicitação encontrada</p>
+                        <small>Suas solicitações aparecerão aqui após o envio</small>
+                    </div>
+                `;
+                return;
+            }
+            
+            historyContainer.innerHTML = userRequests.map(request => `
+                <div class="history-item">
+                    <div class="history-header">
+                        <h4>Solicitação #${request.id}</h4>
+                        <span class="status-badge status-${request.status.toLowerCase()}">${request.status}</span>
+                    </div>
+                    <div class="history-details">
+                        <p><strong>URL Original:</strong> ${request.original_url}</p>
+                        <p><strong>Título:</strong> ${request.original_title}</p>
+                        <p><strong>URL para Remoção:</strong> ${request.removal_url}</p>
+                        <p><strong>Data:</strong> ${new Date(request.created_at).toLocaleDateString('pt-BR')}</p>
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        function updateStats() {
+            document.getElementById('totalRequests').textContent = userRequests.length;
+        }
+
+        function clearDraftData() {
+            const keys = Object.keys(localStorage);
+            keys.forEach(key => {
+                if (key.startsWith('tronos_draft_')) {
+                    localStorage.removeItem(key);
+                }
+            });
+        }
+
+        function logout() {
+            if (confirm('Tem certeza que deseja sair?')) {
+                localStorage.clear();
+                window.location.href = '/';
+            }
+        }
+
+        // Utility functions
+        function showLoading() {
+            document.getElementById('loadingOverlay').style.display = 'flex';
+        }
+
+        function hideLoading() {
+            document.getElementById('loadingOverlay').style.display = 'none';
+        }
+
+        function showToast(message, type = 'info') {
+            const toast = document.createElement('div');
+            toast.className = `toast toast-${type}`;
+            toast.textContent = message;
+            
+            document.getElementById('toastContainer').appendChild(toast);
+            
+            setTimeout(() => {
+                toast.classList.add('show');
+            }, 100);
+            
+            setTimeout(() => {
+                toast.classList.remove('show');
+                setTimeout(() => {
+                    toast.remove();
+                }, 300);
+            }, 3000);
+        }
+    </script>
+
+    <style>
+        /* Estilos para header e logo */
+        .header {
+            background: rgba(10, 10, 10, 0.95);
+            backdrop-filter: blur(20px);
+            border-bottom: 2px solid rgba(0, 255, 255, 0.3);
+            padding: 1rem 0;
+            position: sticky;
+            top: 0;
+            z-index: 1000;
+        }
+
+        .header-content {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 0 2rem;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .logo {
+            display: flex;
+            align-items: center;
+        }
+
+        .logo img {
+            height: 50px;
+            max-width: 200px;
+            object-fit: contain;
+            filter: drop-shadow(0 0 10px rgba(0, 255, 255, 0.5));
+        }
+
+        .header-info {
+            display: flex;
+            align-items: center;
+            gap: 2rem;
+        }
+
+        .header-title {
+            color: #00ffff;
+            font-size: 1.5rem;
+            font-weight: 600;
+            text-shadow: 0 0 10px rgba(0, 255, 255, 0.5);
+        }
+
+        .main-content {
+            padding: 2rem;
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+
+        /* Responsividade para header */
+        @media (max-width: 768px) {
+            .header-content {
+                padding: 0 1rem;
+                flex-direction: column;
+                gap: 1rem;
+            }
+
+            .logo img {
+                height: 40px;
+                max-width: 150px;
+            }
+
+            .header-title {
+                font-size: 1.2rem;
+            }
+
+            .header-info {
+                gap: 1rem;
+            }
+        }
+
+        /* Estilos específicos para o painel de remoção */
+        .removal-items {
+            display: flex;
+            flex-direction: column;
+            gap: 2rem;
+        }
+
+        .removal-item {
+            background: linear-gradient(135deg, rgba(0, 255, 255, 0.1), rgba(255, 0, 255, 0.05));
+            border: 2px solid rgba(0, 255, 255, 0.3);
+            border-radius: 16px;
+            padding: 2rem;
+            position: relative;
+            box-shadow: 0 8px 32px rgba(0, 255, 255, 0.1);
+            transition: all 0.3s ease;
+        }
+
+        .removal-item:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 12px 40px rgba(0, 255, 255, 0.2);
+            border-color: rgba(0, 255, 255, 0.5);
+        }
+
+        .item-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 1.5rem;
+            padding-bottom: 1rem;
+            border-bottom: 2px solid rgba(0, 255, 255, 0.2);
+        }
+
+        .item-header h4 {
+            color: #00ffff;
+            margin: 0;
+            font-size: 1.3rem;
+            font-weight: 600;
+            text-shadow: 0 0 10px rgba(0, 255, 255, 0.5);
+        }
+
+        .form-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+            gap: 1.5rem;
+        }
+
+        /* Estilos diferenciados para campos originais (azul/ciano) */
+        .form-group.original label {
+            color: #00ffff;
+            text-shadow: 0 0 8px rgba(0, 255, 255, 0.6);
+            font-weight: 600;
+        }
+
+        .form-group.original input {
+            border: 2px solid rgba(0, 255, 255, 0.4);
+            background: rgba(0, 255, 255, 0.05);
+        }
+
+        .form-group.original input:focus {
+            border-color: #00ffff;
+            box-shadow: 0 0 20px rgba(0, 255, 255, 0.3);
+        }
+
+        /* Estilos diferenciados para campos de remoção (vermelho) */
+        .form-group.removal label {
+            color: #ff4757;
+            text-shadow: 0 0 8px rgba(255, 71, 87, 0.6);
+            font-weight: 600;
+        }
+
+        .form-group.removal input {
+            border: 2px solid rgba(255, 71, 87, 0.4);
+            background: rgba(255, 71, 87, 0.05);
+        }
+
+        .form-group.removal input:focus {
+            border-color: #ff4757;
+            box-shadow: 0 0 20px rgba(255, 71, 87, 0.3);
+        }
+
+        .form-actions {
+            display: flex;
+            gap: 1.5rem;
+            justify-content: center;
+            margin-top: 3rem;
+            flex-wrap: wrap;
+        }
+
+        .btn {
+            padding: 1rem 2rem;
+            border-radius: 12px;
+            font-weight: 600;
+            font-size: 1.1rem;
+            transition: all 0.3s ease;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        .btn-primary {
+            background: linear-gradient(135deg, #00ffff, #ff00ff);
+            border: none;
+            color: #000;
+            box-shadow: 0 4px 20px rgba(0, 255, 255, 0.3);
+        }
+
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 30px rgba(0, 255, 255, 0.5);
+        }
+
+        .btn-secondary {
+            background: rgba(255, 255, 255, 0.1);
+            border: 2px solid rgba(0, 255, 255, 0.5);
+            color: #00ffff;
+        }
+
+        .btn-secondary:hover {
+            background: rgba(0, 255, 255, 0.1);
+            transform: translateY(-2px);
+        }
+
+        .btn-danger {
+            background: linear-gradient(135deg, #ff4757, #ff3742);
+            border: none;
+            color: white;
+            padding: 0.5rem 1rem;
+            font-size: 0.9rem;
+        }
+
+        .btn-danger:hover {
+            transform: scale(1.05);
+            box-shadow: 0 4px 15px rgba(255, 71, 87, 0.4);
+        }
+
+        .history-container {
+            max-height: 600px;
+            overflow-y: auto;
+            border-radius: 12px;
+            background: rgba(0, 0, 0, 0.3);
+            padding: 1rem;
+        }
+
+        .history-item {
+            background: linear-gradient(135deg, rgba(255, 255, 255, 0.08), rgba(0, 255, 255, 0.05));
+            border: 1px solid rgba(0, 255, 255, 0.3);
+            border-radius: 12px;
+            padding: 1.5rem;
+            margin-bottom: 1rem;
+            transition: all 0.3s ease;
+        }
+
+        .history-item:hover {
+            transform: translateX(5px);
+            border-color: rgba(0, 255, 255, 0.5);
+            box-shadow: 0 4px 20px rgba(0, 255, 255, 0.1);
+        }
+
+        .history-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 1rem;
+        }
+
+        .history-header h4 {
+            color: #00ffff;
+            margin: 0;
+            font-size: 1.2rem;
+            text-shadow: 0 0 8px rgba(0, 255, 255, 0.5);
+        }
+
+        .status-badge {
+            padding: 0.5rem 1rem;
+            border-radius: 25px;
+            font-size: 0.85rem;
+            font-weight: bold;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        .status-pendente {
+            background: linear-gradient(135deg, rgba(255, 193, 7, 0.3), rgba(255, 193, 7, 0.1));
+            color: #ffc107;
+            border: 1px solid #ffc107;
+            box-shadow: 0 0 15px rgba(255, 193, 7, 0.3);
+        }
+
+        .status-aprovado {
+            background: linear-gradient(135deg, rgba(40, 167, 69, 0.3), rgba(40, 167, 69, 0.1));
+            color: #28a745;
+            border: 1px solid #28a745;
+            box-shadow: 0 0 15px rgba(40, 167, 69, 0.3);
+        }
+
+        .status-rejeitado {
+            background: linear-gradient(135deg, rgba(220, 53, 69, 0.3), rgba(220, 53, 69, 0.1));
+            color: #dc3545;
+            border: 1px solid #dc3545;
+            box-shadow: 0 0 15px rgba(220, 53, 69, 0.3);
+        }
+
+        .history-details p {
+            margin: 0.5rem 0;
+            color: #e0e0e0;
+            font-size: 0.95rem;
+            line-height: 1.5;
+        }
+
+        .history-details strong {
+            color: #00ffff;
+            text-shadow: 0 0 5px rgba(0, 255, 255, 0.5);
+        }
+
+        .empty-state {
+            text-align: center;
+            padding: 4rem 2rem;
+            color: #888;
+        }
+
+        .empty-state-icon {
+            font-size: 4rem;
+            margin-bottom: 1.5rem;
+            opacity: 0.7;
+        }
+
+        .loading-state {
+            text-align: center;
+            padding: 3rem;
+            color: #00ffff;
+            font-size: 1.1rem;
+        }
+
+        /* Animações */
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.7; }
+        }
+
+        .loading-state {
+            animation: pulse 2s infinite;
+        }
+
+        /* Responsividade melhorada */
+        @media (max-width: 768px) {
+            .form-grid {
+                grid-template-columns: 1fr;
+            }
+            
+            .form-actions {
+                flex-direction: column;
+            }
+            
+            .history-header {
+                flex-direction: column;
+                align-items: flex-start;
+                gap: 0.5rem;
+            }
+
+            .removal-item {
+                padding: 1.5rem;
+            }
+
+            .btn {
+                padding: 0.8rem 1.5rem;
+                font-size: 1rem;
+            }
+        }
+
+        /* Melhorias no dashboard stats */
+        .dashboard-stats {
+            margin-bottom: 3rem;
+        }
+
+        .stat-card {
+            background: linear-gradient(135deg, rgba(0, 255, 255, 0.1), rgba(255, 0, 255, 0.05));
+            border: 2px solid rgba(0, 255, 255, 0.3);
+            border-radius: 16px;
+            padding: 2rem;
+            text-align: center;
+            box-shadow: 0 8px 32px rgba(0, 255, 255, 0.1);
+        }
+
+        .stat-card h3 {
+            color: #00ffff;
+            font-size: 1.5rem;
+            margin-bottom: 0.5rem;
+            text-shadow: 0 0 10px rgba(0, 255, 255, 0.5);
+        }
+
+        .stat-number {
+            font-size: 3rem;
+            font-weight: bold;
+            color: #ff00ff;
+            text-shadow: 0 0 20px rgba(255, 0, 255, 0.5);
+            margin: 1rem 0;
+        }
+
+        .stat-label {
+            color: #e0e0e0;
+            font-size: 1.1rem;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+    </style>
+</body>
+</html>
+

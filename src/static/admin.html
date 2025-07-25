@@ -1,0 +1,1387 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Tronos - Painel Administrativo</title>
+    <link rel="stylesheet" href="styles.css">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Orbitron:wght@400;700;900&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+    <style>
+        .admin-container {
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: var(--spacing-lg);
+            padding-top: 90px;
+        }
+        
+        .admin-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: var(--spacing-xxl);
+            padding: var(--spacing-lg);
+            background: var(--bg-card);
+            border-radius: 12px;
+            border: 1px solid rgba(0, 245, 255, 0.3);
+        }
+        
+        .admin-title {
+            font-family: var(--font-display);
+            font-size: 2rem;
+            background: linear-gradient(135deg, var(--neon-cyan), var(--neon-purple));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+        
+        .admin-tabs {
+            display: flex;
+            gap: var(--spacing-md);
+            margin-bottom: var(--spacing-xl);
+            border-bottom: 1px solid rgba(0, 245, 255, 0.2);
+        }
+        
+        .admin-tab {
+            padding: var(--spacing-md) var(--spacing-lg);
+            background: transparent;
+            border: none;
+            color: var(--text-secondary);
+            cursor: pointer;
+            transition: all 0.3s ease;
+            border-bottom: 3px solid transparent;
+            font-family: var(--font-primary);
+            font-weight: 500;
+        }
+        
+        .admin-tab.active {
+            color: var(--neon-cyan);
+            border-bottom-color: var(--neon-cyan);
+            text-shadow: 0 0 10px rgba(0, 245, 255, 0.5);
+        }
+        
+        .admin-tab:hover {
+            color: var(--neon-cyan);
+        }
+        
+        .tab-content {
+            display: none;
+        }
+        
+        .tab-content.active {
+            display: block;
+            animation: fadeInUp 0.5s ease;
+        }
+        
+        .data-table {
+            background: var(--bg-card);
+            border-radius: 12px;
+            border: 1px solid rgba(0, 245, 255, 0.2);
+            overflow: hidden;
+            margin-bottom: var(--spacing-xl);
+        }
+        
+        .data-table table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+        
+        .data-table th,
+        .data-table td {
+            padding: var(--spacing-md);
+            text-align: left;
+            border-bottom: 1px solid rgba(0, 245, 255, 0.1);
+        }
+        
+        .data-table th {
+            background: rgba(0, 245, 255, 0.1);
+            color: var(--neon-cyan);
+            font-weight: 600;
+            font-family: var(--font-tech);
+        }
+        
+        .data-table tr:hover {
+            background: rgba(0, 245, 255, 0.05);
+        }
+        
+        .status-badge {
+            padding: 4px 12px;
+            border-radius: 20px;
+            font-size: 0.8rem;
+            font-weight: 600;
+            text-transform: uppercase;
+        }
+        
+        .status-pending {
+            background: rgba(255, 184, 0, 0.2);
+            color: var(--warning);
+            border: 1px solid var(--warning);
+        }
+        
+        .status-approved {
+            background: rgba(0, 255, 136, 0.2);
+            color: var(--success);
+            border: 1px solid var(--success);
+        }
+        
+        .status-rejected {
+            background: rgba(255, 51, 102, 0.2);
+            color: var(--error);
+            border: 1px solid var(--error);
+        }
+        
+        .action-buttons {
+            display: flex;
+            gap: var(--spacing-sm);
+        }
+        
+        .btn-small {
+            padding: 6px 12px;
+            font-size: 0.8rem;
+            border-radius: 6px;
+        }
+        
+        .btn-approve {
+            background: var(--success);
+            color: var(--bg-primary);
+            border: none;
+        }
+        
+        .btn-reject {
+            background: var(--error);
+            color: white;
+            border: none;
+        }
+        
+        .btn-copy {
+            background: var(--neon-purple);
+            color: white;
+            border: none;
+        }
+        
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: var(--spacing-lg);
+            margin-bottom: var(--spacing-xxl);
+        }
+        
+        .stat-card {
+            background: var(--bg-card);
+            padding: var(--spacing-lg);
+            border-radius: 12px;
+            border: 1px solid rgba(0, 245, 255, 0.2);
+            text-align: center;
+            transition: all 0.3s ease;
+        }
+        
+        .stat-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 10px 30px rgba(0, 245, 255, 0.2);
+        }
+        
+        .stat-number {
+            font-size: 2.5rem;
+            font-weight: 900;
+            font-family: var(--font-display);
+            background: linear-gradient(135deg, var(--neon-cyan), var(--neon-pink));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+        
+        .stat-label {
+            color: var(--text-secondary);
+            font-size: 0.9rem;
+            margin-top: var(--spacing-sm);
+        }
+        
+        .empty-state {
+            text-align: center;
+            padding: var(--spacing-xxl);
+            color: var(--text-secondary);
+        }
+        
+        .empty-state-icon {
+            font-size: 4rem;
+            margin-bottom: var(--spacing-lg);
+            opacity: 0.5;
+        }
+        
+        @media (max-width: 768px) {
+            .admin-tabs {
+                flex-wrap: wrap;
+            }
+            
+            .data-table {
+                overflow-x: auto;
+            }
+            
+            .stats-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        /* =================================
+           MODAL STYLES - TRONOS ADMIN
+           ================================= */
+
+        /* Modal Overlay */
+        .modal-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.8);
+            backdrop-filter: blur(5px);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            z-index: 10000;
+            opacity: 0;
+            visibility: hidden;
+            transition: all 0.3s ease;
+        }
+
+        .modal-overlay.active {
+            opacity: 1;
+            visibility: visible;
+        }
+
+        /* Modal Container */
+        .modal-container {
+            background: linear-gradient(135deg, rgba(0, 20, 40, 0.95), rgba(20, 0, 40, 0.95));
+            border: 2px solid rgba(0, 245, 255, 0.3);
+            border-radius: 20px;
+            box-shadow: 
+                0 20px 60px rgba(0, 245, 255, 0.2),
+                0 0 100px rgba(255, 0, 255, 0.1),
+                inset 0 1px 0 rgba(255, 255, 255, 0.1);
+            max-width: 90vw;
+            max-height: 90vh;
+            width: 800px;
+            overflow: hidden;
+            transform: scale(0.7) translateY(50px);
+            transition: all 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+            position: relative;
+        }
+
+        .modal-overlay.active .modal-container {
+            transform: scale(1) translateY(0);
+        }
+
+        /* Modal Header */
+        .modal-header {
+            background: linear-gradient(135deg, rgba(0, 245, 255, 0.1), rgba(255, 0, 255, 0.1));
+            border-bottom: 2px solid rgba(0, 245, 255, 0.2);
+            padding: 1.5rem 2rem;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            position: relative;
+        }
+
+        .modal-header::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 1px;
+            background: linear-gradient(90deg, transparent, rgba(0, 245, 255, 0.5), transparent);
+        }
+
+        .modal-title {
+            font-family: var(--font-display);
+            font-size: 1.5rem;
+            font-weight: 700;
+            background: linear-gradient(135deg, #00ffff, #ff00ff);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            text-shadow: 0 0 20px rgba(0, 245, 255, 0.5);
+            margin: 0;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .modal-close {
+            background: rgba(255, 51, 102, 0.2);
+            border: 1px solid rgba(255, 51, 102, 0.5);
+            color: #ff3366;
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            font-size: 1.2rem;
+            font-weight: bold;
+        }
+
+        .modal-close:hover {
+            background: rgba(255, 51, 102, 0.3);
+            transform: scale(1.1) rotate(90deg);
+            box-shadow: 0 0 20px rgba(255, 51, 102, 0.4);
+        }
+
+        /* Modal Body */
+        .modal-body {
+            padding: 2rem;
+            max-height: 60vh;
+            overflow-y: auto;
+            scrollbar-width: thin;
+            scrollbar-color: rgba(0, 245, 255, 0.3) transparent;
+        }
+
+        .modal-body::-webkit-scrollbar {
+            width: 8px;
+        }
+
+        .modal-body::-webkit-scrollbar-track {
+            background: rgba(0, 0, 0, 0.2);
+            border-radius: 4px;
+        }
+
+        .modal-body::-webkit-scrollbar-thumb {
+            background: linear-gradient(135deg, rgba(0, 245, 255, 0.3), rgba(255, 0, 255, 0.3));
+            border-radius: 4px;
+        }
+
+        .modal-body::-webkit-scrollbar-thumb:hover {
+            background: linear-gradient(135deg, rgba(0, 245, 255, 0.5), rgba(255, 0, 255, 0.5));
+        }
+
+        /* Info Sections */
+        .info-section {
+            background: rgba(0, 0, 0, 0.3);
+            border: 1px solid rgba(0, 245, 255, 0.2);
+            border-radius: 12px;
+            padding: 1.5rem;
+            margin-bottom: 1.5rem;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .info-section::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 2px;
+            background: linear-gradient(90deg, transparent, rgba(0, 245, 255, 0.5), transparent);
+        }
+
+        .info-section.danger {
+            border-color: rgba(255, 71, 87, 0.3);
+        }
+
+        .info-section.danger::before {
+            background: linear-gradient(90deg, transparent, rgba(255, 71, 87, 0.5), transparent);
+        }
+
+        .info-section.success {
+            border-color: rgba(0, 255, 136, 0.3);
+        }
+
+        .info-section.success::before {
+            background: linear-gradient(90deg, transparent, rgba(0, 255, 136, 0.5), transparent);
+        }
+
+        .section-title {
+            font-family: var(--font-display);
+            font-size: 1.1rem;
+            font-weight: 600;
+            color: #00ffff;
+            margin: 0 0 1rem 0;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            text-shadow: 0 0 10px rgba(0, 245, 255, 0.5);
+        }
+
+        .info-section.danger .section-title {
+            color: #ff4757;
+            text-shadow: 0 0 10px rgba(255, 71, 87, 0.5);
+        }
+
+        .info-section.success .section-title {
+            color: #00ff88;
+            text-shadow: 0 0 10px rgba(0, 255, 136, 0.5);
+        }
+
+        /* Info Items */
+        .info-item {
+            display: flex;
+            align-items: flex-start;
+            margin-bottom: 1rem;
+            gap: 1rem;
+            padding: 0.5rem 0;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+        }
+
+        .info-item:last-child {
+            border-bottom: none;
+            margin-bottom: 0;
+        }
+
+        .info-label {
+            color: #888;
+            font-weight: 600;
+            min-width: 140px;
+            font-size: 0.9rem;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .info-value {
+            color: #e0e0e0;
+            flex: 1;
+            word-break: break-word;
+            font-size: 0.95rem;
+            line-height: 1.4;
+        }
+
+        .info-value.highlight {
+            color: #00ffff;
+            font-weight: 500;
+            text-shadow: 0 0 5px rgba(0, 245, 255, 0.3);
+        }
+
+        .info-value.url {
+            color: #ff00ff;
+            text-decoration: underline;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .info-value.url:hover {
+            color: #00ffff;
+            text-shadow: 0 0 10px rgba(0, 245, 255, 0.5);
+        }
+
+        /* Copy Button */
+        .copy-btn {
+            background: rgba(0, 245, 255, 0.2);
+            border: 1px solid rgba(0, 245, 255, 0.5);
+            color: #00ffff;
+            padding: 0.3rem 0.6rem;
+            border-radius: 6px;
+            font-size: 0.8rem;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            min-width: 40px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 0.3rem;
+        }
+
+        .copy-btn:hover {
+            background: rgba(0, 245, 255, 0.3);
+            transform: scale(1.05);
+            box-shadow: 0 2px 10px rgba(0, 245, 255, 0.3);
+        }
+
+        .copy-btn.copied {
+            background: rgba(0, 255, 136, 0.3);
+            border-color: rgba(0, 255, 136, 0.5);
+            color: #00ff88;
+        }
+
+        /* Modal Actions */
+        .modal-actions {
+            background: rgba(0, 0, 0, 0.2);
+            border-top: 1px solid rgba(0, 245, 255, 0.2);
+            padding: 1.5rem 2rem;
+            display: flex;
+            justify-content: flex-end;
+            gap: 1rem;
+        }
+
+        .modal-btn {
+            padding: 0.75rem 1.5rem;
+            border-radius: 8px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            border: 1px solid;
+            font-size: 0.9rem;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .modal-btn.primary {
+            background: linear-gradient(135deg, rgba(0, 245, 255, 0.2), rgba(255, 0, 255, 0.2));
+            border-color: rgba(0, 245, 255, 0.5);
+            color: #00ffff;
+        }
+
+        .modal-btn.primary:hover {
+            background: linear-gradient(135deg, rgba(0, 245, 255, 0.3), rgba(255, 0, 255, 0.3));
+            transform: translateY(-2px);
+            box-shadow: 0 5px 20px rgba(0, 245, 255, 0.3);
+        }
+
+        .modal-btn.success {
+            background: rgba(0, 255, 136, 0.2);
+            border-color: rgba(0, 255, 136, 0.5);
+            color: #00ff88;
+        }
+
+        .modal-btn.success:hover {
+            background: rgba(0, 255, 136, 0.3);
+            transform: translateY(-2px);
+            box-shadow: 0 5px 20px rgba(0, 255, 136, 0.3);
+        }
+
+        .modal-btn.danger {
+            background: rgba(255, 71, 87, 0.2);
+            border-color: rgba(255, 71, 87, 0.5);
+            color: #ff4757;
+        }
+
+        .modal-btn.danger:hover {
+            background: rgba(255, 71, 87, 0.3);
+            transform: translateY(-2px);
+            box-shadow: 0 5px 20px rgba(255, 71, 87, 0.3);
+        }
+
+        /* Loading State */
+        .modal-loading {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 3rem;
+            flex-direction: column;
+            gap: 1rem;
+        }
+
+        .modal-spinner {
+            width: 40px;
+            height: 40px;
+            border: 3px solid rgba(0, 245, 255, 0.2);
+            border-top: 3px solid #00ffff;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        @keyframes copySuccess {
+            0% { transform: scale(1); }
+            50% { transform: scale(1.2); }
+            100% { transform: scale(1); }
+        }
+
+        .copy-btn.copied {
+            animation: copySuccess 0.3s ease;
+        }
+
+        /* Responsive Design for Modals */
+        @media (max-width: 768px) {
+            .modal-container {
+                width: 95vw;
+                max-height: 95vh;
+                margin: 1rem;
+            }
+            
+            .modal-header {
+                padding: 1rem 1.5rem;
+            }
+            
+            .modal-body {
+                padding: 1.5rem;
+                max-height: 70vh;
+            }
+            
+            .modal-actions {
+                padding: 1rem 1.5rem;
+                flex-direction: column;
+            }
+            
+            .info-item {
+                flex-direction: column;
+                gap: 0.5rem;
+            }
+            
+            .info-label {
+                min-width: auto;
+            }
+            
+            .modal-title {
+                font-size: 1.2rem;
+            }
+        }
+        /* Estilos para cards de solicitação */
+        .requests-container {
+            display: flex;
+            flex-direction: column;
+            gap: 2rem;
+            margin-top: 2rem;
+        }
+
+        .request-card {
+            background: linear-gradient(135deg, rgba(0, 255, 255, 0.1), rgba(255, 0, 255, 0.05));
+            border: 2px solid rgba(0, 255, 255, 0.3);
+            border-radius: 16px;
+            padding: 2rem;
+            box-shadow: 0 8px 32px rgba(0, 255, 255, 0.1);
+            transition: all 0.3s ease;
+        }
+
+        .request-card:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 12px 40px rgba(0, 255, 255, 0.2);
+            border-color: rgba(0, 255, 255, 0.5);
+        }
+
+        .request-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 2rem;
+            padding-bottom: 1rem;
+            border-bottom: 2px solid rgba(0, 255, 255, 0.2);
+        }
+
+        .request-header h4 {
+            color: #00ffff;
+            margin: 0;
+            font-size: 1.4rem;
+            font-weight: 600;
+            text-shadow: 0 0 10px rgba(0, 255, 255, 0.5);
+        }
+
+        .request-actions {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+        }
+
+        .request-details {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 2rem;
+        }
+
+        .detail-section {
+            background: rgba(0, 0, 0, 0.2);
+            border-radius: 12px;
+            padding: 1.5rem;
+            border: 1px solid rgba(0, 255, 255, 0.2);
+        }
+
+        .detail-section h5 {
+            color: #00ffff;
+            margin: 0 0 1rem 0;
+            font-size: 1.1rem;
+            font-weight: 600;
+            text-shadow: 0 0 8px rgba(0, 255, 255, 0.5);
+            border-bottom: 1px solid rgba(0, 255, 255, 0.3);
+            padding-bottom: 0.5rem;
+        }
+
+        .detail-section.removal-section h5 {
+            color: #ff4757;
+            text-shadow: 0 0 8px rgba(255, 71, 87, 0.5);
+            border-bottom-color: rgba(255, 71, 87, 0.3);
+        }
+
+        .detail-item {
+            display: flex;
+            align-items: center;
+            margin-bottom: 1rem;
+            gap: 1rem;
+        }
+
+        .detail-label {
+            color: #888;
+            font-weight: 600;
+            min-width: 120px;
+            font-size: 0.9rem;
+        }
+
+        .detail-value {
+            color: #e0e0e0;
+            flex: 1;
+            word-break: break-all;
+            font-size: 0.95rem;
+            line-height: 1.4;
+        }
+
+        .btn-copy {
+            background: rgba(0, 255, 255, 0.2);
+            border: 1px solid rgba(0, 255, 255, 0.5);
+            color: #00ffff;
+            padding: 0.3rem 0.6rem;
+            border-radius: 6px;
+            font-size: 0.8rem;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            min-width: 40px;
+        }
+
+        .btn-copy:hover {
+            background: rgba(0, 255, 255, 0.3);
+            transform: scale(1.05);
+            box-shadow: 0 2px 10px rgba(0, 255, 255, 0.3);
+        }
+
+        .removal-section .detail-label {
+            color: #ff4757;
+        }
+
+        .removal-section .btn-copy {
+            background: rgba(255, 71, 87, 0.2);
+            border-color: rgba(255, 71, 87, 0.5);
+            color: #ff4757;
+        }
+
+        .removal-section .btn-copy:hover {
+            background: rgba(255, 71, 87, 0.3);
+            box-shadow: 0 2px 10px rgba(255, 71, 87, 0.3);
+        }
+
+        /* Animação para notificação de cópia */
+        @keyframes slideIn {
+            from {
+                transform: translateX(100%);
+                opacity: 0;
+            }
+            to {
+                transform: translateX(0);
+                opacity: 1;
+            }
+        }
+
+        /* Responsividade para cards */
+        @media (max-width: 768px) {
+            .request-details {
+                grid-template-columns: 1fr;
+            }
+            
+            .request-header {
+                flex-direction: column;
+                align-items: flex-start;
+                gap: 1rem;
+            }
+            
+            .detail-item {
+                flex-direction: column;
+                align-items: flex-start;
+                gap: 0.5rem;
+            }
+            
+            .detail-label {
+                min-width: auto;
+            }
+        }
+    </style>
+</head>
+<body>
+    <!-- Navigation -->
+    <nav class="navbar">
+        <div class="nav-container">
+            <div class="nav-logo">
+                <img src="assets/tronos_logo.png" alt="Tronos" class="logo-img">
+            </div>
+            <div class="nav-menu">
+                <span style="color: var(--neon-cyan);">Painel Administrativo</span>
+                <div class="nav-buttons">
+                    <span id="adminName" style="color: var(--text-secondary);"></span>
+                    <button class="btn btn-secondary" onclick="logout()">Sair</button>
+                </div>
+            </div>
+        </div>
+    </nav>
+
+    <div class="admin-container">
+        <!-- Header -->
+        <div class="admin-header">
+            <h1 class="admin-title">Painel Administrativo</h1>
+            <div class="header-actions">
+                <button class="btn btn-secondary" onclick="window.location.href='/'">
+                    🏠 Voltar para Home
+                </button>
+                <div class="admin-stats">
+                    <span style="color: var(--text-secondary);">Última atualização: <span id="lastUpdate"></span></span>
+                </div>
+            </div>
+        </div>
+
+        <!-- Statistics -->
+        <div class="stats-grid">
+            <div class="stat-card">
+                <div class="stat-number" id="pendingUsersCount">0</div>
+                <div class="stat-label">Usuários Pendentes</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-number" id="pendingRequestsCount">0</div>
+                <div class="stat-label">Solicitações Pendentes</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-number" id="totalUsersCount">0</div>
+                <div class="stat-label">Total de Usuários</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-number" id="totalRequestsCount">0</div>
+                <div class="stat-label">Total de Solicitações</div>
+            </div>
+        </div>
+
+        <!-- Tabs -->
+        <div class="admin-tabs">
+            <button class="admin-tab active" onclick="showTab('pending-users')">Usuários Pendentes</button>
+            <button class="admin-tab" onclick="showTab('removal-requests')">Solicitações de Remoção</button>
+            <button class="admin-tab" onclick="showTab('archived-requests')">Solicitações Arquivadas</button>
+            <button class="admin-tab" onclick="showTab('contact-messages')">Mensagens de Contato</button>
+            <button class="admin-tab" onclick="showTab('all-users')">Todos os Usuários</button>
+            <button class="admin-tab" onclick="showTab('logs')">Logs do Sistema</button>
+        </div>
+
+        <!-- Pending Users Tab -->
+        <div id="pending-users" class="tab-content active">
+            <div class="data-table">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Nome</th>
+                            <th>Email</th>
+                            <th>Tipo</th>
+                            <th>Canal/Função</th>
+                            <th>Data</th>
+                            <th>Ações</th>
+                        </tr>
+                    </thead>
+                    <tbody id="pendingUsersTable">
+                        <tr>
+                            <td colspan="6" class="empty-state">
+                                <div class="empty-state-icon">👥</div>
+                                <p>Nenhum usuário pendente de aprovação</p>
+                            </td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <!-- Removal Requests Tab -->
+        <div id="removal-requests" class="tab-content">
+            <div class="data-table">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Solicitante</th>
+                            <th>URL Original</th>
+                            <th>URL para Remoção</th>
+                            <th>Status</th>
+                            <th>Data</th>
+                            <th>Ações</th>
+                        </tr>
+                    </thead>
+                    <tbody id="removalRequestsTable">
+                        <tr>
+                            <td colspan="6" class="empty-state">
+                                <div class="empty-state-icon">📋</div>
+                                <p>Nenhuma solicitação de remoção</p>
+                            </td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <!-- Archived Requests Tab -->
+        <div id="archived-requests" class="tab-content">
+            <div class="search-section" style="margin-bottom: 20px; padding: 16px; background: var(--bg-secondary); border-radius: 8px;">
+                <h3 style="color: var(--neon-cyan); margin-bottom: 12px;">🔍 Buscar Solicitação Arquivada</h3>
+                <div style="display: flex; gap: 12px; align-items: center;">
+                    <input type="url" id="archiveSearchUrl" placeholder="Cole a URL do conteúdo para buscar..." 
+                           style="flex: 1; padding: 8px 12px; background: var(--bg-primary); border: 1px solid rgba(0, 245, 255, 0.3); border-radius: 4px; color: var(--text-primary);">
+                    <button class="btn btn-primary" onclick="searchArchivedRequest()">
+                        🔍 Buscar
+                    </button>
+                </div>
+                <div id="archiveSearchResults" style="margin-top: 16px;"></div>
+            </div>
+            
+            <div class="data-table">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Solicitante</th>
+                            <th>URL Original</th>
+                            <th>URL para Remoção</th>
+                            <th>Status</th>
+                            <th>Data da Decisão</th>
+                            <th>Ações</th>
+                        </tr>
+                    </thead>
+                    <tbody id="archivedRequestsTable">
+                        <tr>
+                            <td colspan="6" class="empty-state">
+                                <div class="empty-state-icon">📦</div>
+                                <p>Nenhuma solicitação arquivada</p>
+                                <small style="color: var(--text-secondary);">Solicitações aprovadas/rejeitadas aparecem aqui automaticamente</small>
+                            </td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <!-- Contact Messages Tab -->
+        <div id="contact-messages" class="tab-content">
+            <div class="data-table">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Nome</th>
+                            <th>E-mail</th>
+                            <th>WhatsApp</th>
+                            <th>URL do Vídeo</th>
+                            <th>Mensagem</th>
+                            <th>Data</th>
+                            <th>Status</th>
+                            <th>Ações</th>
+                        </tr>
+                    </thead>
+                    <tbody id="contactMessagesTable">
+                        <tr>
+                            <td colspan="8" class="empty-state">
+                                <div class="empty-state-icon">📧</div>
+                                <p>Nenhuma mensagem de contato</p>
+                            </td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <!-- All Users Tab -->
+        <div id="all-users" class="tab-content">
+            <div class="data-table">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Nome</th>
+                            <th>Email</th>
+                            <th>Tipo</th>
+                            <th>Status</th>
+                            <th>Data de Cadastro</th>
+                            <th>Ações</th>
+                        </tr>
+                    </thead>
+                    <tbody id="allUsersTable">
+                        <tr>
+                            <td colspan="6" class="empty-state">
+                                <div class="empty-state-icon">👥</div>
+                                <p>Carregando usuários...</p>
+                            </td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <!-- Logs Tab -->
+        <div id="logs" class="tab-content">
+            <div class="data-table">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Data/Hora</th>
+                            <th>Usuário</th>
+                            <th>Ação</th>
+                            <th>Detalhes</th>
+                            <th>IP</th>
+                        </tr>
+                    </thead>
+                    <tbody id="logsTable">
+                        <tr>
+                            <td colspan="5" class="empty-state">
+                                <div class="empty-state-icon">📊</div>
+                                <p>Carregando logs...</p>
+                            </td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <!-- Loading Overlay -->
+    <div id="loadingOverlay" class="loading-overlay">
+        <div class="loading-spinner"></div>
+    </div>
+
+    <!-- Toast Notifications -->
+    <div id="toastContainer" class="toast-container"></div>
+
+    <script src="script.js"></script>
+    <script src="admin.js"></script>
+    
+    <!-- Modal Enhancement Script -->
+    <script>
+        // =================================
+        // MODAL FUNCTIONS - TRONOS ADMIN
+        // =================================
+
+        // Modal Manager Class
+        class ModalManager {
+            constructor() {
+                this.activeModal = null;
+                this.initializeEventListeners();
+            }
+
+            initializeEventListeners() {
+                // ESC key to close modal
+                document.addEventListener('keydown', (e) => {
+                    if (e.key === 'Escape' && this.activeModal) {
+                        this.closeModal();
+                    }
+                });
+
+                // Click outside to close modal
+                document.addEventListener('click', (e) => {
+                    if (e.target.classList.contains('modal-overlay')) {
+                        this.closeModal();
+                    }
+                });
+            }
+
+            createModal(title, content, actions = []) {
+                // Remove existing modal if any
+                this.closeModal();
+
+                // Create modal structure
+                const modalOverlay = document.createElement('div');
+                modalOverlay.className = 'modal-overlay';
+                modalOverlay.innerHTML = `
+                    <div class="modal-container">
+                        <div class="modal-header">
+                            <h3 class="modal-title">${title}</h3>
+                            <button class="modal-close" onclick="modalManager.closeModal()">×</button>
+                        </div>
+                        <div class="modal-body">
+                            ${content}
+                        </div>
+                        ${actions.length > 0 ? `
+                            <div class="modal-actions">
+                                ${actions.map(action => `
+                                    <button class="modal-btn ${action.class || 'primary'}" 
+                                            onclick="${action.onclick || ''}"
+                                            ${action.disabled ? 'disabled' : ''}>
+                                        ${action.icon ? `<span class="icon">${action.icon}</span>` : ''}
+                                        ${action.text}
+                                    </button>
+                                `).join('')}
+                            </div>
+                        ` : ''}
+                    </div>
+                `;
+
+                document.body.appendChild(modalOverlay);
+                this.activeModal = modalOverlay;
+
+                // Show modal with animation
+                setTimeout(() => {
+                    modalOverlay.classList.add('active');
+                }, 10);
+
+                return modalOverlay;
+            }
+
+            closeModal() {
+                if (this.activeModal) {
+                    this.activeModal.classList.remove('active');
+                    setTimeout(() => {
+                        if (this.activeModal && this.activeModal.parentNode) {
+                            this.activeModal.parentNode.removeChild(this.activeModal);
+                        }
+                        this.activeModal = null;
+                    }, 300);
+                }
+            }
+
+            showLoading(title = 'Carregando...') {
+                const content = `
+                    <div class="modal-loading">
+                        <div class="modal-spinner"></div>
+                        <p style="color: var(--text-secondary);">Aguarde...</p>
+                    </div>
+                `;
+                return this.createModal(title, content);
+            }
+        }
+
+        // Initialize modal manager
+        const modalManager = new ModalManager();
+
+        // Utility Functions
+        function formatModalDate(dateString) {
+            if (!dateString) return 'N/A';
+            const date = new Date(dateString);
+            return date.toLocaleString('pt-BR', {
+                day: '2-digit',
+                month: '2-digit',
+                year: 'numeric',
+                hour: '2-digit',
+                minute: '2-digit'
+            });
+        }
+
+        function createInfoSection(title, items, className = '') {
+            const itemsHtml = items.map(item => {
+                if (!item.value || item.value === 'N/A' || item.value === '') {
+                    return '';
+                }
+                
+                const isUrl = item.type === 'url' && item.value.startsWith('http');
+                const valueClass = item.highlight ? 'highlight' : (isUrl ? 'url' : '');
+                const clickHandler = isUrl ? `onclick="window.open('${item.value}', '_blank')"` : '';
+                
+                return `
+                    <div class="info-item">
+                        <span class="info-label">
+                            ${item.icon ? `<span class="icon">${item.icon}</span>` : ''}
+                            ${item.label}:
+                        </span>
+                        <span class="info-value ${valueClass}" ${clickHandler}>
+                            ${item.value}
+                        </span>
+                        <button class="copy-btn" onclick="copyToClipboardModal('${item.value.replace(/'/g, "\\'")}', this)">
+                            📋
+                        </button>
+                    </div>
+                `;
+            }).filter(item => item !== '').join('');
+
+            if (!itemsHtml) return '';
+
+            return `
+                <div class="info-section ${className}">
+                    <h4 class="section-title">
+                        ${title}
+                    </h4>
+                    ${itemsHtml}
+                </div>
+            `;
+        }
+
+        function copyToClipboardModal(text, button) {
+            navigator.clipboard.writeText(text).then(() => {
+                // Visual feedback
+                const originalContent = button.innerHTML;
+                button.innerHTML = '✓';
+                button.classList.add('copied');
+                
+                setTimeout(() => {
+                    button.innerHTML = originalContent;
+                    button.classList.remove('copied');
+                }, 2000);
+                
+                // Toast notification
+                showToast('Copiado para a área de transferência!', 'success');
+            }).catch(err => {
+                console.error('Erro ao copiar:', err);
+                showToast('Erro ao copiar texto', 'error');
+            });
+        }
+
+        // Enhanced User Details Modal
+        function showUserDetailsModal(userId) {
+            const user = pendingUsers.find(u => u.id === userId) || allUsers.find(u => u.id === userId);
+            if (!user) {
+                showToast('Usuário não encontrado', 'error');
+                return;
+            }
+
+            const title = `👤 Detalhes do Usuário - ${user.full_name}`;
+            
+            // Basic Information
+            const basicInfo = createInfoSection('📋 Informações Básicas', [
+                { label: 'Nome Completo', value: user.full_name, icon: '👤', highlight: true },
+                { label: 'Login', value: user.login, icon: '🔑' },
+                { label: 'E-mail', value: user.email, icon: '📧' },
+                { label: 'WhatsApp', value: user.whatsapp, icon: '📱' },
+                { label: 'Data de Nascimento', value: user.birth_date, icon: '🎂' },
+                { label: 'Data de Cadastro', value: formatModalDate(user.created_at), icon: '📅' }
+            ]);
+
+            // User Type Information
+            const typeInfo = createInfoSection('🏷️ Tipo de Usuário', [
+                { label: 'Tipo', value: user.user_type === 'agent' ? 'Agente' : 'Criador', icon: '🎭', highlight: true },
+                { label: 'Status', value: user.is_approved ? 'Aprovado' : 'Pendente', icon: '⚡', highlight: true }
+            ]);
+
+            // Specific Information based on user type
+            let specificInfo = '';
+            if (user.user_type === 'agent') {
+                specificInfo = createInfoSection('🤝 Informações do Agente', [
+                    { label: 'Canal', value: user.channel_name, icon: '📺' },
+                    { label: 'Função', value: user.function, icon: '💼' },
+                    { label: 'Função (Outro)', value: user.function_other, icon: '📝' },
+                    { label: 'Criador Representado', value: user.represented_creator, icon: '👥' },
+                    { label: 'Código de Cadastro', value: user.registration_code, icon: '🔢' }
+                ]);
+            } else if (user.user_type === 'creator') {
+                specificInfo = createInfoSection('🎨 Informações do Criador', [
+                    { label: 'Canal', value: user.channel_name, icon: '📺' },
+                    { label: 'Descrição do Canal', value: user.channel_description, icon: '📝' },
+                    { label: 'Principais Plataformas', value: user.main_platforms, icon: '🌐' },
+                    { label: 'Número de Seguidores', value: user.subscribers_count, icon: '👥' },
+                    { label: 'Endereço', value: user.full_address, icon: '📍' },
+                    { label: 'Telefone', value: user.phone, icon: '📞' },
+                    { label: 'URL da Rede Social', value: user.social_url, icon: '🔗', type: 'url' },
+                    { label: 'País', value: user.country, icon: '🌍' },
+                    { label: 'CPF/CNPJ', value: user.document_number, icon: '📄' },
+                    { label: 'Assinatura', value: user.signature, icon: '✍️' }
+                ]);
+            }
+
+            const content = basicInfo + typeInfo + specificInfo;
+
+            // Actions based on user status
+            const actions = [];
+            if (!user.is_approved) {
+                actions.push(
+                    { text: 'Aprovar', class: 'success', icon: '✅', onclick: `approveUserFromModal(${user.id})` },
+                    { text: 'Rejeitar', class: 'danger', icon: '❌', onclick: `rejectUserFromModal(${user.id})` }
+                );
+            } else {
+                actions.push(
+                    { text: 'Revogar Acesso', class: 'danger', icon: '🔒', onclick: `revokeUserFromModal(${user.id})` }
+                );
+            }
+            actions.push({ text: 'Fechar', class: 'primary', icon: '👁️', onclick: 'modalManager.closeModal()' });
+
+            modalManager.createModal(title, content, actions);
+        }
+
+        // Enhanced Message Details Modal
+        function showMessageDetailsModal(messageId) {
+            const message = contactMessages.find(m => m.id === messageId);
+            if (!message) {
+                showToast('Mensagem não encontrada', 'error');
+                return;
+            }
+
+            const title = `📧 Mensagem de Contato - ${message.name}`;
+            
+            const contactInfo = createInfoSection('👤 Informações de Contato', [
+                { label: 'Nome', value: message.name, icon: '👤', highlight: true },
+                { label: 'E-mail', value: message.email, icon: '📧' },
+                { label: 'WhatsApp', value: message.whatsapp, icon: '📱' },
+                { label: 'URL do Vídeo', value: message.video_url, icon: '🎥', type: 'url' }
+            ]);
+
+            const messageInfo = createInfoSection('💬 Mensagem', [
+                { label: 'Data', value: formatModalDate(message.created_at), icon: '📅' },
+                { label: 'Status', value: message.is_read ? 'Lida' : 'Nova', icon: '👁️', highlight: true }
+            ]);
+
+            const messageContent = `
+                <div class="info-section">
+                    <h4 class="section-title">📝 Conteúdo da Mensagem</h4>
+                    <div style="background: rgba(0,0,0,0.3); padding: 1rem; border-radius: 8px; border-left: 3px solid var(--neon-cyan);">
+                        <p style="color: #e0e0e0; line-height: 1.6; margin: 0; white-space: pre-wrap;">${message.message}</p>
+                    </div>
+                    <button class="copy-btn" style="margin-top: 1rem;" onclick="copyToClipboardModal('${message.message.replace(/'/g, "\\'")}', this)">
+                        📋 Copiar Mensagem
+                    </button>
+                </div>
+            `;
+
+            const content = contactInfo + messageInfo + messageContent;
+
+            const actions = [];
+            if (!message.is_read) {
+                actions.push({ text: 'Marcar como Lida', class: 'success', icon: '✅', onclick: `markMessageReadFromModal(${message.id})` });
+            }
+            actions.push({ text: 'Fechar', class: 'primary', icon: '👁️', onclick: 'modalManager.closeModal()' });
+
+            modalManager.createModal(title, content, actions);
+        }
+
+        // Modal Action Functions
+        async function approveUserFromModal(userId) {
+            modalManager.showLoading('Aprovando usuário...');
+            try {
+                await approveUser(userId);
+                modalManager.closeModal();
+                showToast('Usuário aprovado com sucesso!', 'success');
+            } catch (error) {
+                modalManager.closeModal();
+                showToast('Erro ao aprovar usuário: ' + error.message, 'error');
+            }
+        }
+
+        async function rejectUserFromModal(userId) {
+            modalManager.closeModal();
+            if (confirm('Tem certeza que deseja rejeitar este usuário? Esta ação não pode ser desfeita.')) {
+                showLoading();
+                try {
+                    await rejectUser(userId);
+                    showToast('Usuário rejeitado!', 'success');
+                } catch (error) {
+                    showToast('Erro ao rejeitar usuário: ' + error.message, 'error');
+                } finally {
+                    hideLoading();
+                }
+            }
+        }
+
+        async function revokeUserFromModal(userId) {
+            modalManager.closeModal();
+            if (confirm('Tem certeza que deseja revogar o acesso deste usuário?')) {
+                showLoading();
+                try {
+                    await revokeUser(userId);
+                    showToast('Acesso revogado com sucesso!', 'success');
+                } catch (error) {
+                    showToast('Erro ao revogar acesso: ' + error.message, 'error');
+                } finally {
+                    hideLoading();
+                }
+            }
+        }
+
+        async function markMessageReadFromModal(messageId) {
+            modalManager.showLoading('Marcando como lida...');
+            try {
+                await markMessageRead(messageId);
+                modalManager.closeModal();
+                showToast('Mensagem marcada como lida!', 'success');
+            } catch (error) {
+                modalManager.closeModal();
+                showToast('Erro ao marcar mensagem: ' + error.message, 'error');
+            }
+        }
+
+        // Replace original functions with modal versions
+        function showUserDetails(userId) {
+            showUserDetailsModal(userId);
+        }
+
+        function viewUserDetails(userId) {
+            showUserDetailsModal(userId);
+        }
+
+        function showMessageDetails(messageId) {
+            showMessageDetailsModal(messageId);
+        }
+    </script>
+</body>
+</html>
+
